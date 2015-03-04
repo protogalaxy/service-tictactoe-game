@@ -1,0 +1,61 @@
+// Copyright (C) 2015 The Protogalaxy Project
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+syntax = "proto3";
+
+package tictactoe;
+
+service GameManager {
+  rpc CreateGame (CreateRequest) returns (CreateReply) {}
+  rpc PlayTurn (TurnRequest) returns (TurnReply) {}
+}
+
+enum ResponseStatus {
+  SUCCESS = 0;
+}
+
+message CreateRequest {
+  repeated string user_ids = 1;
+}
+
+message CreateReply {
+  ResponseStatus status = 1;
+  string game_id = 2;
+}
+
+enum Mark {
+  EMPTY = 0;
+  X = 1;
+  Y = 2;
+}
+
+message TurnRequest {
+  message Move {
+    int32 x = 1;
+    int32 y = 2;
+  }
+
+  string game_id = 1;
+  string user_id = 2;
+  Move move = 3;
+}
+
+message TurnReply {
+  enum ResponseStatus {
+    SUCCESS = 0;
+  }
+
+  ResponseStatus status = 1;
+}
