@@ -32,18 +32,55 @@ type gameGrid struct {
 	grid []Mark
 }
 
+func newGameGrid() *gameGrid {
+	return &gameGrid{
+		grid: make([]Mark, GridSize*GridSize),
+	}
+}
+
 func (g *gameGrid) set(x, y int, m Mark) {
 	g.grid[y*GridSize+x] = m
 }
 
 func (g *gameGrid) isEmpty(x, y int) bool {
-	return g.grid[y*GridSize+x] == Mark_EMPTY
+	return g.get(x, y) == Mark_EMPTY
 }
 
-func newGameGrid() *gameGrid {
-	return &gameGrid{
-		grid: make([]Mark, GridSize*GridSize),
+func (g *gameGrid) get(x, y int) Mark {
+	return g.grid[y*GridSize+x]
+}
+
+func (g *gameGrid) checkMarksHorizontal(y int) bool {
+	first := g.get(0, y)
+	return first == g.get(1, y) && first == g.get(2, y)
+}
+
+func (g *gameGrid) checkDiagonals() bool {
+	return g.checkDiagonalDown()
+}
+
+func (g *gameGrid) checkDiagonalDown() bool {
+	first := g.get(0, 0)
+	return first == g.get(1, 1) && first == g.get(2, 2)
+}
+
+func (g *gameGrid) checkDiagonalUp() bool {
+	first := g.get(0, 2)
+	return first == g.get(1, 1) && first == g.get(2, 0)
+}
+
+func (g *gameGrid) checkMarksVertical(x int) bool {
+	first := g.get(x, 0)
+	return first == g.get(x, 1) && first == g.get(x, 2)
+}
+
+func (g *gameGrid) isFull() bool {
+	for _, m := range g.grid {
+		if m == Mark_EMPTY {
+			return false
+		}
 	}
+	return true
 }
 
 type GameID string
@@ -54,6 +91,8 @@ type game struct {
 	CurrentPlayer int
 	PlayerList    []string
 	Players       map[string]Mark
+	GameFinished  bool
+	Winner        string
 }
 
 func newGame(ID GameID, playerOne, playerTwo string) *game {
@@ -81,6 +120,27 @@ func (g *game) updateActivePlayer() {
 	g.CurrentPlayer = (g.CurrentPlayer + 1) % len(g.PlayerList)
 }
 
+func (g *game) checkWinner(userID string, x, y int) {
+	if g.Grid.checkMarksHorizontal(y) || g.Grid.checkMarksVertical(x) || g.Grid.checkDiagonals() {
+		g.Winner = userID
+		g.GameFinished = true
+	} else if g.Grid.isFull() {
+		g.GameFinished = true
+	}
+}
+
+func (g *game) isFinished() bool {
+	return g.GameFinished
+}
+
+func (g *game) isDraw() bool {
+	return g.GameFinished && g.Winner == ""
+}
+
+func (g *game) winner() string {
+	return g.Winner
+}
+
 func (g *game) placeMark(userID string, x, y int) error {
 	if g.activePlayer() != userID {
 		return ErrNotActivePlayer
@@ -88,6 +148,7 @@ func (g *game) placeMark(userID string, x, y int) error {
 		return ErrInvalidMove
 	}
 	g.Grid.set(x, y, g.Players[userID])
+	g.checkWinner(userID, x, y)
 	g.updateActivePlayer()
 	return nil
 }
@@ -133,6 +194,11 @@ func (m *GameManager) PlayTurn(ctx context.Context, req *TurnRequest) (*TurnRepl
 	defer m.lock.Unlock()
 
 	game := m.activeGames[GameID(req.GameId)]
+	if game.isFinished() {
+		prepareWinnerResponse(&rep, game)
+		return &rep, nil
+	}
+
 	err := game.placeMark(req.UserId, int(req.Move.X), int(req.Move.Y))
 	switch {
 	case err == ErrInvalidMove:
@@ -143,5 +209,17 @@ func (m *GameManager) PlayTurn(ctx context.Context, req *TurnRequest) (*TurnRepl
 		return nil, err
 	}
 
+	if game.isFinished() {
+		prepareWinnerResponse(&rep, game)
+	}
+
 	return &rep, nil
+}
+
+func prepareWinnerResponse(rep *TurnReply, game *game) {
+	rep.Status = TurnReply_FINISHED
+	rep.Winner = &TurnReply_Winner{
+		Draw:   game.isDraw(),
+		UserId: game.winner(),
+	}
 }

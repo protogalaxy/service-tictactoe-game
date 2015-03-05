@@ -76,17 +76,20 @@ const (
 	TurnReply_SUCCESS           TurnReply_ResponseStatus = 0
 	TurnReply_INVALID_MOVE      TurnReply_ResponseStatus = 1
 	TurnReply_NOT_ACTIVE_PLAYER TurnReply_ResponseStatus = 2
+	TurnReply_FINISHED          TurnReply_ResponseStatus = 3
 )
 
 var TurnReply_ResponseStatus_name = map[int32]string{
 	0: "SUCCESS",
 	1: "INVALID_MOVE",
 	2: "NOT_ACTIVE_PLAYER",
+	3: "FINISHED",
 }
 var TurnReply_ResponseStatus_value = map[string]int32{
 	"SUCCESS":           0,
 	"INVALID_MOVE":      1,
 	"NOT_ACTIVE_PLAYER": 2,
+	"FINISHED":          3,
 }
 
 func (x TurnReply_ResponseStatus) String() string {
@@ -138,11 +141,28 @@ func (*TurnRequest_Move) ProtoMessage()    {}
 
 type TurnReply struct {
 	Status TurnReply_ResponseStatus `protobuf:"varint,1,opt,name=status,enum=tictactoe.TurnReply_ResponseStatus" json:"status,omitempty"`
+	Winner *TurnReply_Winner        `protobuf:"bytes,2,opt,name=winner" json:"winner,omitempty"`
 }
 
 func (m *TurnReply) Reset()         { *m = TurnReply{} }
 func (m *TurnReply) String() string { return proto.CompactTextString(m) }
 func (*TurnReply) ProtoMessage()    {}
+
+func (m *TurnReply) GetWinner() *TurnReply_Winner {
+	if m != nil {
+		return m.Winner
+	}
+	return nil
+}
+
+type TurnReply_Winner struct {
+	Draw   bool   `protobuf:"varint,1,opt,name=draw" json:"draw,omitempty"`
+	UserId string `protobuf:"bytes,2,opt,name=user_id" json:"user_id,omitempty"`
+}
+
+func (m *TurnReply_Winner) Reset()         { *m = TurnReply_Winner{} }
+func (m *TurnReply_Winner) String() string { return proto.CompactTextString(m) }
+func (*TurnReply_Winner) ProtoMessage()    {}
 
 func init() {
 	proto.RegisterEnum("tictactoe.ResponseStatus", ResponseStatus_name, ResponseStatus_value)
