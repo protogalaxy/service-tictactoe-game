@@ -83,6 +83,14 @@ func (g *gameGrid) isFull() bool {
 	return true
 }
 
+func (g *gameGrid) coordinatesValid(x, y int) bool {
+	return validateIndex(x) && validateIndex(y)
+}
+
+func validateIndex(x int) bool {
+	return x >= 0 && x < GridSize
+}
+
 type GameID string
 
 type game struct {
@@ -144,7 +152,7 @@ func (g *game) winner() string {
 func (g *game) placeMark(userID string, x, y int) error {
 	if g.activePlayer() != userID {
 		return ErrNotActivePlayer
-	} else if !g.Grid.isEmpty(x, y) {
+	} else if !g.Grid.coordinatesValid(x, y) || !g.Grid.isEmpty(x, y) {
 		return ErrInvalidMove
 	}
 	g.Grid.set(x, y, g.Players[userID])
