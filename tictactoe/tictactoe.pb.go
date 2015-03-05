@@ -73,14 +73,20 @@ func (x Mark) String() string {
 type TurnReply_ResponseStatus int32
 
 const (
-	TurnReply_SUCCESS TurnReply_ResponseStatus = 0
+	TurnReply_SUCCESS           TurnReply_ResponseStatus = 0
+	TurnReply_INVALID_MOVE      TurnReply_ResponseStatus = 1
+	TurnReply_NOT_ACTIVE_PLAYER TurnReply_ResponseStatus = 2
 )
 
 var TurnReply_ResponseStatus_name = map[int32]string{
 	0: "SUCCESS",
+	1: "INVALID_MOVE",
+	2: "NOT_ACTIVE_PLAYER",
 }
 var TurnReply_ResponseStatus_value = map[string]int32{
-	"SUCCESS": 0,
+	"SUCCESS":           0,
+	"INVALID_MOVE":      1,
+	"NOT_ACTIVE_PLAYER": 2,
 }
 
 func (x TurnReply_ResponseStatus) String() string {
