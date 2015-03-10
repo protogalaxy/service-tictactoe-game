@@ -22,15 +22,15 @@ service GameManager {
   rpc PlayTurn (TurnRequest) returns (TurnReply) {}
 }
 
-enum ResponseStatus {
-  SUCCESS = 0;
-}
-
 message CreateRequest {
   repeated string user_ids = 1;
 }
 
 message CreateReply {
+  enum ResponseStatus {
+    SUCCESS = 0;
+  }
+
   ResponseStatus status = 1;
   string game_id = 2;
 }

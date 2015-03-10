@@ -189,7 +189,7 @@ func (m *GameManager) CreateGame(ctx context.Context, req *CreateRequest) (*Crea
 	m.activeGames[game.ID] = game
 	m.lock.Unlock()
 
-	rep.Status = ResponseStatus_SUCCESS
+	rep.Status = CreateReply_SUCCESS
 	rep.GameId = string(game.ID)
 	return &rep, nil
 }

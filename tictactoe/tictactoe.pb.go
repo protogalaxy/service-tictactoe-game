@@ -30,23 +30,6 @@ var _ grpc.ClientConn
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 
-type ResponseStatus int32
-
-const (
-	ResponseStatus_SUCCESS ResponseStatus = 0
-)
-
-var ResponseStatus_name = map[int32]string{
-	0: "SUCCESS",
-}
-var ResponseStatus_value = map[string]int32{
-	"SUCCESS": 0,
-}
-
-func (x ResponseStatus) String() string {
-	return proto.EnumName(ResponseStatus_name, int32(x))
-}
-
 type Mark int32
 
 const (
@@ -68,6 +51,23 @@ var Mark_value = map[string]int32{
 
 func (x Mark) String() string {
 	return proto.EnumName(Mark_name, int32(x))
+}
+
+type CreateReply_ResponseStatus int32
+
+const (
+	CreateReply_SUCCESS CreateReply_ResponseStatus = 0
+)
+
+var CreateReply_ResponseStatus_name = map[int32]string{
+	0: "SUCCESS",
+}
+var CreateReply_ResponseStatus_value = map[string]int32{
+	"SUCCESS": 0,
+}
+
+func (x CreateReply_ResponseStatus) String() string {
+	return proto.EnumName(CreateReply_ResponseStatus_name, int32(x))
 }
 
 type TurnReply_ResponseStatus int32
@@ -105,8 +105,8 @@ func (m *CreateRequest) String() string { return proto.CompactTextString(m) }
 func (*CreateRequest) ProtoMessage()    {}
 
 type CreateReply struct {
-	Status ResponseStatus `protobuf:"varint,1,opt,name=status,enum=tictactoe.ResponseStatus" json:"status,omitempty"`
-	GameId string         `protobuf:"bytes,2,opt,name=game_id" json:"game_id,omitempty"`
+	Status CreateReply_ResponseStatus `protobuf:"varint,1,opt,name=status,enum=tictactoe.CreateReply_ResponseStatus" json:"status,omitempty"`
+	GameId string                     `protobuf:"bytes,2,opt,name=game_id" json:"game_id,omitempty"`
 }
 
 func (m *CreateReply) Reset()         { *m = CreateReply{} }
@@ -165,8 +165,8 @@ func (m *TurnReply_Winner) String() string { return proto.CompactTextString(m) }
 func (*TurnReply_Winner) ProtoMessage()    {}
 
 func init() {
-	proto.RegisterEnum("tictactoe.ResponseStatus", ResponseStatus_name, ResponseStatus_value)
 	proto.RegisterEnum("tictactoe.Mark", Mark_name, Mark_value)
+	proto.RegisterEnum("tictactoe.CreateReply_ResponseStatus", CreateReply_ResponseStatus_name, CreateReply_ResponseStatus_value)
 	proto.RegisterEnum("tictactoe.TurnReply_ResponseStatus", TurnReply_ResponseStatus_name, TurnReply_ResponseStatus_value)
 }
 
