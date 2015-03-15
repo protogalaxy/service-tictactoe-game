@@ -22,7 +22,7 @@ import (
 	"net/http"
 	"sync"
 
-	"golang.org/x/net/context"
+	"github.com/protogalaxy/service-tictactoe-game/Godeps/_workspace/src/golang.org/x/net/context"
 )
 
 type contextKey struct{}

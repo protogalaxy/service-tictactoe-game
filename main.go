@@ -21,9 +21,9 @@ import (
 	"net"
 	"time"
 
-	"github.com/golang/glog"
+	"github.com/protogalaxy/service-tictactoe-game/Godeps/_workspace/src/github.com/golang/glog"
+	"github.com/protogalaxy/service-tictactoe-game/Godeps/_workspace/src/google.golang.org/grpc"
 	"github.com/protogalaxy/service-tictactoe-game/tictactoe"
-	"google.golang.org/grpc"
 )
 
 func main() {

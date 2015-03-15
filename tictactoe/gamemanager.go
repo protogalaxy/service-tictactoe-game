@@ -21,9 +21,8 @@ import (
 	"errors"
 	"sync"
 
-	"code.google.com/p/go-uuid/uuid"
-
-	"golang.org/x/net/context"
+	"github.com/protogalaxy/service-tictactoe-game/Godeps/_workspace/src/code.google.com/p/go-uuid/uuid"
+	"github.com/protogalaxy/service-tictactoe-game/Godeps/_workspace/src/golang.org/x/net/context"
 )
 
 const GridSize int = 3
