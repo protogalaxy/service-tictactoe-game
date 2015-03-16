@@ -13,32 +13,38 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package stream
 
 import (
-	"flag"
-	"math/rand"
-	"net"
-	"time"
-
 	"github.com/protogalaxy/service-tictactoe-game/Godeps/_workspace/src/github.com/golang/glog"
-	"github.com/protogalaxy/service-tictactoe-game/Godeps/_workspace/src/google.golang.org/grpc"
-	"github.com/protogalaxy/service-tictactoe-game/stream"
-	"github.com/protogalaxy/service-tictactoe-game/tictactoe"
+	"github.com/protogalaxy/service-tictactoe-game/Godeps/_workspace/src/github.com/golang/protobuf/proto"
 )
 
-func main() {
-	flag.Parse()
-	rand.Seed(time.Now().UnixNano())
+type Producer interface {
+	Send(b []byte) error
+}
 
-	socket, err := net.Listen("tcp", ":9090")
+type ProtoProducer interface {
+	SendMessage(m proto.Message) error
+	Producer
+}
+
+type TracingProducer struct {
+}
+
+func NewProducer() *TracingProducer {
+	return &TracingProducer{}
+}
+
+func (s *TracingProducer) Send(b []byte) error {
+	glog.Info("Event sent")
+	return nil
+}
+
+func (s *TracingProducer) SendMessage(m proto.Message) error {
+	b, err := proto.Marshal(m)
 	if err != nil {
-		glog.Fatalf("failed to listen: %v", err)
+		return err
 	}
-
-	producer := stream.NewProducer()
-
-	grpcServer := grpc.NewServer()
-	tictactoe.RegisterGameManagerServer(grpcServer, tictactoe.NewGameManager(producer))
-	grpcServer.Serve(socket)
+	return s.Send(b)
 }

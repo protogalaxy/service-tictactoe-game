@@ -13,6 +13,7 @@ It has these top-level messages:
 	CreateReply
 	TurnRequest
 	TurnReply
+	Event
 */
 package tictactoe
 
@@ -96,6 +97,26 @@ func (x TurnReply_ResponseStatus) String() string {
 	return proto.EnumName(TurnReply_ResponseStatus_name, int32(x))
 }
 
+type Event_Type int32
+
+const (
+	Event_GAME_CREATED Event_Type = 0
+	Event_TURN_PLAYED  Event_Type = 1
+)
+
+var Event_Type_name = map[int32]string{
+	0: "GAME_CREATED",
+	1: "TURN_PLAYED",
+}
+var Event_Type_value = map[string]int32{
+	"GAME_CREATED": 0,
+	"TURN_PLAYED":  1,
+}
+
+func (x Event_Type) String() string {
+	return proto.EnumName(Event_Type_name, int32(x))
+}
+
 type CreateRequest struct {
 	UserIds []string `protobuf:"bytes,1,rep,name=user_ids" json:"user_ids,omitempty"`
 }
@@ -164,10 +185,56 @@ func (m *TurnReply_Winner) Reset()         { *m = TurnReply_Winner{} }
 func (m *TurnReply_Winner) String() string { return proto.CompactTextString(m) }
 func (*TurnReply_Winner) ProtoMessage()    {}
 
+type Event struct {
+	Type       Event_Type               `protobuf:"varint,1,opt,name=type,enum=tictactoe.Event_Type" json:"type,omitempty"`
+	Timestamp  *Event_Timestamp         `protobuf:"bytes,2,opt,name=timestamp" json:"timestamp,omitempty"`
+	GameId     string                   `protobuf:"bytes,3,opt,name=game_id" json:"game_id,omitempty"`
+	UserId     string                   `protobuf:"bytes,4,opt,name=user_id" json:"user_id,omitempty"`
+	UserList   []string                 `protobuf:"bytes,5,rep,name=user_list" json:"user_list,omitempty"`
+	Move       *TurnRequest_Move        `protobuf:"bytes,6,opt,name=move" json:"move,omitempty"`
+	TurnStatus TurnReply_ResponseStatus `protobuf:"varint,7,opt,name=turn_status,enum=tictactoe.TurnReply_ResponseStatus" json:"turn_status,omitempty"`
+	Winner     *TurnReply_Winner        `protobuf:"bytes,8,opt,name=winner" json:"winner,omitempty"`
+}
+
+func (m *Event) Reset()         { *m = Event{} }
+func (m *Event) String() string { return proto.CompactTextString(m) }
+func (*Event) ProtoMessage()    {}
+
+func (m *Event) GetTimestamp() *Event_Timestamp {
+	if m != nil {
+		return m.Timestamp
+	}
+	return nil
+}
+
+func (m *Event) GetMove() *TurnRequest_Move {
+	if m != nil {
+		return m.Move
+	}
+	return nil
+}
+
+func (m *Event) GetWinner() *TurnReply_Winner {
+	if m != nil {
+		return m.Winner
+	}
+	return nil
+}
+
+type Event_Timestamp struct {
+	Seconds int64 `protobuf:"varint,1,opt,name=seconds" json:"seconds,omitempty"`
+	Nanos   int32 `protobuf:"varint,2,opt,name=nanos" json:"nanos,omitempty"`
+}
+
+func (m *Event_Timestamp) Reset()         { *m = Event_Timestamp{} }
+func (m *Event_Timestamp) String() string { return proto.CompactTextString(m) }
+func (*Event_Timestamp) ProtoMessage()    {}
+
 func init() {
 	proto.RegisterEnum("tictactoe.Mark", Mark_name, Mark_value)
 	proto.RegisterEnum("tictactoe.CreateReply_ResponseStatus", CreateReply_ResponseStatus_name, CreateReply_ResponseStatus_value)
 	proto.RegisterEnum("tictactoe.TurnReply_ResponseStatus", TurnReply_ResponseStatus_name, TurnReply_ResponseStatus_value)
+	proto.RegisterEnum("tictactoe.Event_Type", Event_Type_name, Event_Type_value)
 }
 
 // Client API for GameManager service

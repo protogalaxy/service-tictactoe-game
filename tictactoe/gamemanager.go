@@ -20,9 +20,11 @@ package tictactoe
 import (
 	"errors"
 	"sync"
+	"time"
 
 	"github.com/protogalaxy/service-tictactoe-game/Godeps/_workspace/src/code.google.com/p/go-uuid/uuid"
 	"github.com/protogalaxy/service-tictactoe-game/Godeps/_workspace/src/golang.org/x/net/context"
+	"github.com/protogalaxy/service-tictactoe-game/stream"
 )
 
 const GridSize int = 3
@@ -163,11 +165,14 @@ func (g *game) placeMark(userID string, x, y int) error {
 type GameManager struct {
 	lock        sync.Mutex
 	activeGames map[GameID]*game
+
+	stream stream.ProtoProducer
 }
 
-func NewGameManager() *GameManager {
+func NewGameManager(s stream.ProtoProducer) *GameManager {
 	return &GameManager{
 		activeGames: make(map[GameID]*game),
+		stream:      s,
 	}
 }
 
@@ -182,7 +187,8 @@ func (m *GameManager) CreateGame(ctx context.Context, req *CreateRequest) (*Crea
 
 	var rep CreateReply
 
-	game := newGame(newID(), req.UserIds[0], req.UserIds[1])
+	gameID := newID()
+	game := newGame(gameID, req.UserIds[0], req.UserIds[1])
 
 	m.lock.Lock()
 	m.activeGames[game.ID] = game
@@ -190,7 +196,27 @@ func (m *GameManager) CreateGame(ctx context.Context, req *CreateRequest) (*Crea
 
 	rep.Status = CreateReply_SUCCESS
 	rep.GameId = string(game.ID)
+
+	ev := Event{
+		Type:      Event_GAME_CREATED,
+		Timestamp: timestamp(),
+		GameId:    string(gameID),
+		UserId:    req.UserIds[0],
+		UserList:  req.UserIds,
+	}
+	if err := m.stream.SendMessage(&ev); err != nil {
+		return nil, err
+	}
+
 	return &rep, nil
+}
+
+func timestamp() *Event_Timestamp {
+	t := time.Now()
+	return &Event_Timestamp{
+		Seconds: t.Unix(),
+		Nanos:   int32(t.Nanosecond()),
+	}
 }
 
 func (m *GameManager) PlayTurn(ctx context.Context, req *TurnRequest) (*TurnReply, error) {
@@ -218,6 +244,23 @@ func (m *GameManager) PlayTurn(ctx context.Context, req *TurnRequest) (*TurnRepl
 
 	if game.isFinished() {
 		prepareWinnerResponse(&rep, game)
+	}
+
+	ev := Event{
+		Type:      Event_TURN_PLAYED,
+		Timestamp: timestamp(),
+		GameId:    string(req.GameId),
+		UserId:    req.UserId,
+		UserList:  game.PlayerList,
+
+		Move:       req.Move,
+		TurnStatus: rep.Status,
+	}
+	if rep.Winner != nil {
+		ev.Winner = rep.Winner
+	}
+	if err := m.stream.SendMessage(&ev); err != nil {
+		return nil, err
 	}
 
 	return &rep, nil

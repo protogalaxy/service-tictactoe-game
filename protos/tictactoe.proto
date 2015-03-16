@@ -70,3 +70,26 @@ message TurnReply {
   ResponseStatus status = 1;
   optional Winner winner = 2;
 }
+
+message Event {
+  enum Type {
+    GAME_CREATED = 0;
+    TURN_PLAYED = 1;
+  }
+  Type type = 1;
+
+  message Timestamp {
+    int64 seconds = 1;
+    int32 nanos = 2;
+  }
+  Timestamp timestamp = 2;
+
+  string game_id = 3;
+  string user_id = 4;
+
+  repeated string user_list = 5;
+
+  TurnRequest.Move move = 6;
+  TurnReply.ResponseStatus turn_status = 7;
+  TurnReply.Winner winner = 8;
+}
