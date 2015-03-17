@@ -16,7 +16,8 @@
 package stream
 
 import (
-	"github.com/protogalaxy/service-tictactoe-game/Godeps/_workspace/src/github.com/golang/glog"
+	"fmt"
+
 	"github.com/protogalaxy/service-tictactoe-game/Godeps/_workspace/src/github.com/golang/protobuf/proto"
 )
 
@@ -37,11 +38,12 @@ func NewProducer() *TracingProducer {
 }
 
 func (s *TracingProducer) Send(b []byte) error {
-	glog.Info("Event sent")
+	fmt.Println("Event size: ", len(b))
 	return nil
 }
 
 func (s *TracingProducer) SendMessage(m proto.Message) error {
+	fmt.Println("Evcent: ", m)
 	b, err := proto.Marshal(m)
 	if err != nil {
 		return err

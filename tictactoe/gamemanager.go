@@ -84,6 +84,12 @@ func (g *gameGrid) isFull() bool {
 	return true
 }
 
+func (g *gameGrid) clone() *gameGrid {
+	grid := make([]Mark, GridSize*GridSize)
+	copy(grid, g.grid)
+	return &gameGrid{grid: grid}
+}
+
 func (g *gameGrid) coordinatesValid(x, y int) bool {
 	return validateIndex(x) && validateIndex(y)
 }
@@ -102,6 +108,7 @@ type game struct {
 	Players       map[string]Mark
 	GameFinished  bool
 	Winner        string
+	CurrentMove   int
 }
 
 func newGame(ID GameID, playerOne, playerTwo string) *game {
@@ -122,6 +129,9 @@ var (
 )
 
 func (g *game) activePlayer() string {
+	if g.isFinished() {
+		return ""
+	}
 	return g.PlayerList[g.CurrentPlayer]
 }
 
@@ -159,7 +169,83 @@ func (g *game) placeMark(userID string, x, y int) error {
 	g.Grid.set(x, y, g.Players[userID])
 	g.checkWinner(userID, x, y)
 	g.updateActivePlayer()
+	g.CurrentMove += 1
 	return nil
+}
+
+func (g *game) validMoves() []*MoveRange {
+	occupied := g.Grid.clone()
+	validMoves := make([]*MoveRange, 0)
+	for x := 0; x < GridSize; x++ {
+		for y := 0; y < GridSize; y++ {
+			if !occupied.isEmpty(x, y) {
+				continue
+			}
+			moveRange := findValidMoveRange(occupied, x, y)
+			validMoves = append(validMoves, moveRange)
+			markOccupied(occupied, moveRange)
+		}
+	}
+	return validMoves
+}
+
+func markOccupied(g *gameGrid, m *MoveRange) {
+	if m.ToX == 0 && m.ToY == 0 {
+		g.set(int(m.FromX), int(m.FromY), Mark_X)
+		return
+	}
+	for x := m.FromX; x <= m.ToX; x++ {
+		for y := m.FromY; y <= m.ToY; y++ {
+			g.set(int(x), int(y), Mark_X)
+		}
+	}
+}
+
+func findValidMoveRange(g *gameGrid, x, y int) *MoveRange {
+	endY := searchValidVertical(g, x, y)
+	endX := extendHorizontally(g, x, y, endY)
+	m := &MoveRange{
+		FromX: int32(x),
+		FromY: int32(y),
+		ToY:   int32(endY),
+		ToX:   int32(endX),
+	}
+	if m.FromX == m.ToX && m.FromY == m.ToY {
+		m.ToX = 0
+		m.ToY = 0
+	}
+	return m
+}
+
+func searchValidVertical(g *gameGrid, posX, posY int) int {
+	y := posY
+	for ; y < GridSize; y++ {
+		if !g.isEmpty(posX, y) {
+			break
+		}
+	}
+	y -= 1
+	return y
+}
+
+func extendHorizontally(g *gameGrid, posX, posY, endY int) int {
+	x := posX
+	for ; x < GridSize; x++ {
+		if !columnEmpty(g, x, posY, endY) {
+			break
+		}
+	}
+	x -= 1
+	return x
+}
+
+func columnEmpty(g *gameGrid, x, y, endY int) bool {
+	for ; y <= endY; y++ {
+		if !g.isEmpty(x, y) {
+			return false
+		}
+	}
+	return true
 }
 
 type GameManager struct {
@@ -203,6 +289,10 @@ func (m *GameManager) CreateGame(ctx context.Context, req *CreateRequest) (*Crea
 		GameId:    string(gameID),
 		UserId:    req.UserIds[0],
 		UserList:  req.UserIds,
+
+		MoveNumber: int32(game.CurrentMove),
+		NextPlayer: game.activePlayer(),
+		ValidMoves: game.validMoves(),
 	}
 	if err := m.stream.SendMessage(&ev); err != nil {
 		return nil, err
@@ -255,9 +345,14 @@ func (m *GameManager) PlayTurn(ctx context.Context, req *TurnRequest) (*TurnRepl
 
 		Move:       req.Move,
 		TurnStatus: rep.Status,
+		MoveNumber: int32(game.CurrentMove),
+
+		NextPlayer: game.activePlayer(),
 	}
 	if rep.Winner != nil {
 		ev.Winner = rep.Winner
+	} else {
+		ev.ValidMoves = game.validMoves()
 	}
 	if err := m.stream.SendMessage(&ev); err != nil {
 		return nil, err

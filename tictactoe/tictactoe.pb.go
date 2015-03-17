@@ -13,6 +13,7 @@ It has these top-level messages:
 	CreateReply
 	TurnRequest
 	TurnReply
+	MoveRange
 	Event
 */
 package tictactoe
@@ -185,6 +186,17 @@ func (m *TurnReply_Winner) Reset()         { *m = TurnReply_Winner{} }
 func (m *TurnReply_Winner) String() string { return proto.CompactTextString(m) }
 func (*TurnReply_Winner) ProtoMessage()    {}
 
+type MoveRange struct {
+	FromX int32 `protobuf:"varint,1,opt,name=from_x" json:"from_x,omitempty"`
+	FromY int32 `protobuf:"varint,2,opt,name=from_y" json:"from_y,omitempty"`
+	ToX   int32 `protobuf:"varint,3,opt,name=to_x" json:"to_x,omitempty"`
+	ToY   int32 `protobuf:"varint,4,opt,name=to_y" json:"to_y,omitempty"`
+}
+
+func (m *MoveRange) Reset()         { *m = MoveRange{} }
+func (m *MoveRange) String() string { return proto.CompactTextString(m) }
+func (*MoveRange) ProtoMessage()    {}
+
 type Event struct {
 	Type       Event_Type               `protobuf:"varint,1,opt,name=type,enum=tictactoe.Event_Type" json:"type,omitempty"`
 	Timestamp  *Event_Timestamp         `protobuf:"bytes,2,opt,name=timestamp" json:"timestamp,omitempty"`
@@ -194,6 +206,9 @@ type Event struct {
 	Move       *TurnRequest_Move        `protobuf:"bytes,6,opt,name=move" json:"move,omitempty"`
 	TurnStatus TurnReply_ResponseStatus `protobuf:"varint,7,opt,name=turn_status,enum=tictactoe.TurnReply_ResponseStatus" json:"turn_status,omitempty"`
 	Winner     *TurnReply_Winner        `protobuf:"bytes,8,opt,name=winner" json:"winner,omitempty"`
+	MoveNumber int32                    `protobuf:"varint,9,opt,name=move_number" json:"move_number,omitempty"`
+	NextPlayer string                   `protobuf:"bytes,10,opt,name=next_player" json:"next_player,omitempty"`
+	ValidMoves []*MoveRange             `protobuf:"bytes,11,rep,name=valid_moves" json:"valid_moves,omitempty"`
 }
 
 func (m *Event) Reset()         { *m = Event{} }
@@ -217,6 +232,13 @@ func (m *Event) GetMove() *TurnRequest_Move {
 func (m *Event) GetWinner() *TurnReply_Winner {
 	if m != nil {
 		return m.Winner
+	}
+	return nil
+}
+
+func (m *Event) GetValidMoves() []*MoveRange {
+	if m != nil {
+		return m.ValidMoves
 	}
 	return nil
 }

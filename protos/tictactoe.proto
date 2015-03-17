@@ -71,6 +71,13 @@ message TurnReply {
   optional Winner winner = 2;
 }
 
+message MoveRange {
+  int32 from_x = 1;
+  int32 from_y = 2;
+  int32 to_x = 3;
+  int32 to_y = 4;
+}
+
 message Event {
   enum Type {
     GAME_CREATED = 0;
@@ -92,4 +99,8 @@ message Event {
   TurnRequest.Move move = 6;
   TurnReply.ResponseStatus turn_status = 7;
   TurnReply.Winner winner = 8;
+  int32 move_number = 9;
+
+  string next_player = 10;
+  repeated MoveRange valid_moves = 11;
 }
