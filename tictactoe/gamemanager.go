@@ -56,18 +56,14 @@ func (g *gameGrid) checkMarksHorizontal(y int) bool {
 	return first == g.get(1, y) && first == g.get(2, y)
 }
 
-func (g *gameGrid) checkDiagonals() bool {
-	return g.checkDiagonalDown()
-}
-
 func (g *gameGrid) checkDiagonalDown() bool {
 	first := g.get(0, 0)
-	return first == g.get(1, 1) && first == g.get(2, 2)
+	return first == g.get(1, 1) && first == g.get(2, 2) && first != Mark_EMPTY
 }
 
 func (g *gameGrid) checkDiagonalUp() bool {
 	first := g.get(0, 2)
-	return first == g.get(1, 1) && first == g.get(2, 0)
+	return first == g.get(1, 1) && first == g.get(2, 0) && first != Mark_EMPTY
 }
 
 func (g *gameGrid) checkMarksVertical(x int) bool {
@@ -106,8 +102,7 @@ type game struct {
 	CurrentPlayer int
 	PlayerList    []string
 	Players       map[string]Mark
-	GameFinished  bool
-	Winner        string
+	Winner        *Winner
 	CurrentMove   int
 }
 
@@ -140,23 +135,49 @@ func (g *game) updateActivePlayer() {
 }
 
 func (g *game) checkWinner(userID string, x, y int) {
-	if g.Grid.checkMarksHorizontal(y) || g.Grid.checkMarksVertical(x) || g.Grid.checkDiagonals() {
-		g.Winner = userID
-		g.GameFinished = true
+	w := &Winner{}
+	var noWinner bool
+	if g.Grid.checkMarksHorizontal(y) {
+		w.Locations = append(w.Locations, &Winner_Location{
+			Direction: Winner_Location_HORIZONTAL,
+			Position:  int32(y),
+		})
+		w.UserId = userID
+	} else if g.Grid.checkMarksVertical(x) {
+		w.Locations = append(w.Locations, &Winner_Location{
+			Direction: Winner_Location_VERTICAL,
+			Position:  int32(x),
+		})
+		w.UserId = userID
+	} else if g.Grid.checkDiagonalUp() {
+		w.Locations = append(w.Locations, &Winner_Location{
+			Direction: Winner_Location_DIAGONAL_UP,
+		})
+		w.UserId = userID
+	} else if g.Grid.checkDiagonalDown() {
+		w.Locations = append(w.Locations, &Winner_Location{
+			Direction: Winner_Location_DIAGONAL_DOWN,
+		})
+		w.UserId = userID
 	} else if g.Grid.isFull() {
-		g.GameFinished = true
+		w.Draw = true
+	} else {
+		noWinner = true
+	}
+	if !noWinner {
+		g.Winner = w
 	}
 }
 
 func (g *game) isFinished() bool {
-	return g.GameFinished
+	return g.Winner != nil
 }
 
 func (g *game) isDraw() bool {
-	return g.GameFinished && g.Winner == ""
+	return g.Winner.Draw
 }
 
-func (g *game) winner() string {
+func (g *game) winner() *Winner {
 	return g.Winner
 }
 
@@ -318,7 +339,7 @@ func (m *GameManager) PlayTurn(ctx context.Context, req *TurnRequest) (*TurnRepl
 
 	game := m.activeGames[GameID(req.GameId)]
 	if game.isFinished() {
-		prepareWinnerResponse(&rep, game)
+		rep.Winner = game.winner()
 		return &rep, nil
 	}
 
@@ -333,7 +354,7 @@ func (m *GameManager) PlayTurn(ctx context.Context, req *TurnRequest) (*TurnRepl
 	}
 
 	if game.isFinished() {
-		prepareWinnerResponse(&rep, game)
+		rep.Winner = game.winner()
 	}
 
 	ev := Event{
@@ -359,12 +380,4 @@ func (m *GameManager) PlayTurn(ctx context.Context, req *TurnRequest) (*TurnRepl
 	}
 
 	return &rep, nil
-}
-
-func prepareWinnerResponse(rep *TurnReply, game *game) {
-	rep.Status = TurnReply_FINISHED
-	rep.Winner = &TurnReply_Winner{
-		Draw:   game.isDraw(),
-		UserId: game.winner(),
-	}
 }

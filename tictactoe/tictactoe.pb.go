@@ -12,6 +12,7 @@ It has these top-level messages:
 	CreateRequest
 	CreateReply
 	TurnRequest
+	Winner
 	TurnReply
 	MoveRange
 	Event
@@ -70,6 +71,32 @@ var CreateReply_ResponseStatus_value = map[string]int32{
 
 func (x CreateReply_ResponseStatus) String() string {
 	return proto.EnumName(CreateReply_ResponseStatus_name, int32(x))
+}
+
+type Winner_Location_Direction int32
+
+const (
+	Winner_Location_HORIZONTAL    Winner_Location_Direction = 0
+	Winner_Location_VERTICAL      Winner_Location_Direction = 1
+	Winner_Location_DIAGONAL_DOWN Winner_Location_Direction = 2
+	Winner_Location_DIAGONAL_UP   Winner_Location_Direction = 3
+)
+
+var Winner_Location_Direction_name = map[int32]string{
+	0: "HORIZONTAL",
+	1: "VERTICAL",
+	2: "DIAGONAL_DOWN",
+	3: "DIAGONAL_UP",
+}
+var Winner_Location_Direction_value = map[string]int32{
+	"HORIZONTAL":    0,
+	"VERTICAL":      1,
+	"DIAGONAL_DOWN": 2,
+	"DIAGONAL_UP":   3,
+}
+
+func (x Winner_Location_Direction) String() string {
+	return proto.EnumName(Winner_Location_Direction_name, int32(x))
 }
 
 type TurnReply_ResponseStatus int32
@@ -136,55 +163,72 @@ func (m *CreateReply) String() string { return proto.CompactTextString(m) }
 func (*CreateReply) ProtoMessage()    {}
 
 type TurnRequest struct {
-	GameId string            `protobuf:"bytes,1,opt,name=game_id" json:"game_id,omitempty"`
-	UserId string            `protobuf:"bytes,2,opt,name=user_id" json:"user_id,omitempty"`
-	Move   *TurnRequest_Move `protobuf:"bytes,3,opt,name=move" json:"move,omitempty"`
+	GameId string              `protobuf:"bytes,1,opt,name=game_id" json:"game_id,omitempty"`
+	UserId string              `protobuf:"bytes,2,opt,name=user_id" json:"user_id,omitempty"`
+	Move   *TurnRequest_Square `protobuf:"bytes,3,opt,name=move" json:"move,omitempty"`
 }
 
 func (m *TurnRequest) Reset()         { *m = TurnRequest{} }
 func (m *TurnRequest) String() string { return proto.CompactTextString(m) }
 func (*TurnRequest) ProtoMessage()    {}
 
-func (m *TurnRequest) GetMove() *TurnRequest_Move {
+func (m *TurnRequest) GetMove() *TurnRequest_Square {
 	if m != nil {
 		return m.Move
 	}
 	return nil
 }
 
-type TurnRequest_Move struct {
+type TurnRequest_Square struct {
 	X int32 `protobuf:"varint,1,opt,name=x" json:"x,omitempty"`
 	Y int32 `protobuf:"varint,2,opt,name=y" json:"y,omitempty"`
 }
 
-func (m *TurnRequest_Move) Reset()         { *m = TurnRequest_Move{} }
-func (m *TurnRequest_Move) String() string { return proto.CompactTextString(m) }
-func (*TurnRequest_Move) ProtoMessage()    {}
+func (m *TurnRequest_Square) Reset()         { *m = TurnRequest_Square{} }
+func (m *TurnRequest_Square) String() string { return proto.CompactTextString(m) }
+func (*TurnRequest_Square) ProtoMessage()    {}
+
+type Winner struct {
+	Draw      bool               `protobuf:"varint,1,opt,name=draw" json:"draw,omitempty"`
+	UserId    string             `protobuf:"bytes,2,opt,name=user_id" json:"user_id,omitempty"`
+	Locations []*Winner_Location `protobuf:"bytes,3,rep,name=locations" json:"locations,omitempty"`
+}
+
+func (m *Winner) Reset()         { *m = Winner{} }
+func (m *Winner) String() string { return proto.CompactTextString(m) }
+func (*Winner) ProtoMessage()    {}
+
+func (m *Winner) GetLocations() []*Winner_Location {
+	if m != nil {
+		return m.Locations
+	}
+	return nil
+}
+
+type Winner_Location struct {
+	Direction Winner_Location_Direction `protobuf:"varint,1,opt,name=direction,enum=tictactoe.Winner_Location_Direction" json:"direction,omitempty"`
+	Position  int32                     `protobuf:"varint,2,opt,name=position" json:"position,omitempty"`
+}
+
+func (m *Winner_Location) Reset()         { *m = Winner_Location{} }
+func (m *Winner_Location) String() string { return proto.CompactTextString(m) }
+func (*Winner_Location) ProtoMessage()    {}
 
 type TurnReply struct {
 	Status TurnReply_ResponseStatus `protobuf:"varint,1,opt,name=status,enum=tictactoe.TurnReply_ResponseStatus" json:"status,omitempty"`
-	Winner *TurnReply_Winner        `protobuf:"bytes,2,opt,name=winner" json:"winner,omitempty"`
+	Winner *Winner                  `protobuf:"bytes,2,opt,name=winner" json:"winner,omitempty"`
 }
 
 func (m *TurnReply) Reset()         { *m = TurnReply{} }
 func (m *TurnReply) String() string { return proto.CompactTextString(m) }
 func (*TurnReply) ProtoMessage()    {}
 
-func (m *TurnReply) GetWinner() *TurnReply_Winner {
+func (m *TurnReply) GetWinner() *Winner {
 	if m != nil {
 		return m.Winner
 	}
 	return nil
 }
-
-type TurnReply_Winner struct {
-	Draw   bool   `protobuf:"varint,1,opt,name=draw" json:"draw,omitempty"`
-	UserId string `protobuf:"bytes,2,opt,name=user_id" json:"user_id,omitempty"`
-}
-
-func (m *TurnReply_Winner) Reset()         { *m = TurnReply_Winner{} }
-func (m *TurnReply_Winner) String() string { return proto.CompactTextString(m) }
-func (*TurnReply_Winner) ProtoMessage()    {}
 
 type MoveRange struct {
 	FromX int32 `protobuf:"varint,1,opt,name=from_x" json:"from_x,omitempty"`
@@ -203,9 +247,9 @@ type Event struct {
 	GameId     string                   `protobuf:"bytes,3,opt,name=game_id" json:"game_id,omitempty"`
 	UserId     string                   `protobuf:"bytes,4,opt,name=user_id" json:"user_id,omitempty"`
 	UserList   []string                 `protobuf:"bytes,5,rep,name=user_list" json:"user_list,omitempty"`
-	Move       *TurnRequest_Move        `protobuf:"bytes,6,opt,name=move" json:"move,omitempty"`
+	Move       *TurnRequest_Square      `protobuf:"bytes,6,opt,name=move" json:"move,omitempty"`
 	TurnStatus TurnReply_ResponseStatus `protobuf:"varint,7,opt,name=turn_status,enum=tictactoe.TurnReply_ResponseStatus" json:"turn_status,omitempty"`
-	Winner     *TurnReply_Winner        `protobuf:"bytes,8,opt,name=winner" json:"winner,omitempty"`
+	Winner     *Winner                  `protobuf:"bytes,8,opt,name=winner" json:"winner,omitempty"`
 	MoveNumber int32                    `protobuf:"varint,9,opt,name=move_number" json:"move_number,omitempty"`
 	NextPlayer string                   `protobuf:"bytes,10,opt,name=next_player" json:"next_player,omitempty"`
 	ValidMoves []*MoveRange             `protobuf:"bytes,11,rep,name=valid_moves" json:"valid_moves,omitempty"`
@@ -222,14 +266,14 @@ func (m *Event) GetTimestamp() *Event_Timestamp {
 	return nil
 }
 
-func (m *Event) GetMove() *TurnRequest_Move {
+func (m *Event) GetMove() *TurnRequest_Square {
 	if m != nil {
 		return m.Move
 	}
 	return nil
 }
 
-func (m *Event) GetWinner() *TurnReply_Winner {
+func (m *Event) GetWinner() *Winner {
 	if m != nil {
 		return m.Winner
 	}
@@ -255,6 +299,7 @@ func (*Event_Timestamp) ProtoMessage()    {}
 func init() {
 	proto.RegisterEnum("tictactoe.Mark", Mark_name, Mark_value)
 	proto.RegisterEnum("tictactoe.CreateReply_ResponseStatus", CreateReply_ResponseStatus_name, CreateReply_ResponseStatus_value)
+	proto.RegisterEnum("tictactoe.Winner_Location_Direction", Winner_Location_Direction_name, Winner_Location_Direction_value)
 	proto.RegisterEnum("tictactoe.TurnReply_ResponseStatus", TurnReply_ResponseStatus_name, TurnReply_ResponseStatus_value)
 	proto.RegisterEnum("tictactoe.Event_Type", Event_Type_name, Event_Type_value)
 }
