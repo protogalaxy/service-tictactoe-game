@@ -220,6 +220,7 @@ func (*Winner_Location) ProtoMessage()    {}
 
 type TurnReply struct {
 	Status TurnReply_ResponseStatus `protobuf:"varint,1,opt,name=status,enum=tictactoe.TurnReply_ResponseStatus" json:"status,omitempty"`
+	MoveId int64                    `protobuf:"varint,2,opt,name=move_id" json:"move_id,omitempty"`
 }
 
 func (m *TurnReply) Reset()         { *m = TurnReply{} }

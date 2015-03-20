@@ -21,9 +21,9 @@ import (
 	"net"
 	"time"
 
+	"github.com/protogalaxy/service-tictactoe-game/Godeps/_workspace/src/github.com/Shopify/sarama"
 	"github.com/protogalaxy/service-tictactoe-game/Godeps/_workspace/src/github.com/golang/glog"
 	"github.com/protogalaxy/service-tictactoe-game/Godeps/_workspace/src/google.golang.org/grpc"
-	"github.com/protogalaxy/service-tictactoe-game/stream"
 	"github.com/protogalaxy/service-tictactoe-game/tictactoe"
 )
 
@@ -36,7 +36,15 @@ func main() {
 		glog.Fatalf("failed to listen: %v", err)
 	}
 
-	producer := stream.NewProducer()
+	producer, err := sarama.NewSyncProducer([]string{"localhost:9092"}, nil)
+	if err != nil {
+		glog.Fatalf("Unable to connect to kafka: %s", err)
+	}
+	defer func() {
+		if err := producer.Close(); err != nil {
+			glog.Errorf("Error closing producer: %s", err)
+		}
+	}()
 
 	grpcServer := grpc.NewServer()
 	tictactoe.RegisterGameManagerServer(grpcServer, tictactoe.NewGameManager(producer))

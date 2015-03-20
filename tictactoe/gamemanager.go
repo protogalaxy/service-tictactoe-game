@@ -23,18 +23,22 @@ import (
 	"time"
 
 	"github.com/protogalaxy/service-tictactoe-game/Godeps/_workspace/src/code.google.com/p/go-uuid/uuid"
+	"github.com/protogalaxy/service-tictactoe-game/Godeps/_workspace/src/github.com/Shopify/sarama"
+	"github.com/protogalaxy/service-tictactoe-game/Godeps/_workspace/src/github.com/golang/glog"
+	"github.com/protogalaxy/service-tictactoe-game/Godeps/_workspace/src/github.com/golang/protobuf/proto"
 	"github.com/protogalaxy/service-tictactoe-game/Godeps/_workspace/src/golang.org/x/net/context"
-	"github.com/protogalaxy/service-tictactoe-game/stream"
 )
+
+const streamTopic = "tictactoe-game-events"
 
 type GameManager struct {
 	lock        sync.Mutex
 	activeGames map[GameID]*game
 
-	stream stream.ProtoProducer
+	stream sarama.SyncProducer
 }
 
-func NewGameManager(s stream.ProtoProducer) *GameManager {
+func NewGameManager(s sarama.SyncProducer) *GameManager {
 	return &GameManager{
 		activeGames: make(map[GameID]*game),
 		stream:      s,
@@ -72,7 +76,7 @@ func (m *GameManager) CreateGame(ctx context.Context, req *CreateRequest) (*Crea
 		NextPlayer: game.activePlayer(),
 		ValidMoves: game.validMoves(),
 	}
-	if err := m.stream.SendMessage(&ev); err != nil {
+	if err := sendMessage(m.stream, streamTopic, ev.GameId, &ev); err != nil {
 		return nil, err
 	}
 
@@ -104,6 +108,8 @@ func (m *GameManager) PlayTurn(ctx context.Context, req *TurnRequest) (*TurnRepl
 		return nil, err
 	}
 
+	rep.MoveId = game.lastMoveID()
+
 	ev := Event{
 		Type:      Event_TURN_PLAYED,
 		Timestamp: time.Now().UnixNano(),
@@ -113,7 +119,7 @@ func (m *GameManager) PlayTurn(ctx context.Context, req *TurnRequest) (*TurnRepl
 
 		Move:       req.Move,
 		TurnStatus: rep.Status,
-		MoveId:     game.lastMoveID(),
+		MoveId:     rep.MoveId,
 
 		NextPlayer: game.activePlayer(),
 	}
@@ -123,9 +129,24 @@ func (m *GameManager) PlayTurn(ctx context.Context, req *TurnRequest) (*TurnRepl
 	} else {
 		ev.ValidMoves = game.validMoves()
 	}
-	if err := m.stream.SendMessage(&ev); err != nil {
+	if err := sendMessage(m.stream, streamTopic, ev.GameId, &ev); err != nil {
 		return nil, err
 	}
 
 	return &rep, nil
+}
+
+func sendMessage(p sarama.SyncProducer, topic string, key string, m proto.Message) error {
+	b, err := proto.Marshal(m)
+	if err != nil {
+		glog.Fatalf("Encoding message: %s", err)
+	}
+
+	msg := &sarama.ProducerMessage{
+		Topic: topic,
+		Value: sarama.ByteEncoder(b),
+		Key:   sarama.StringEncoder(key),
+	}
+	_, _, err = p.SendMessage(msg)
+	return err
 }

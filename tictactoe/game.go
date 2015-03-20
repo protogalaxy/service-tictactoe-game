@@ -126,7 +126,8 @@ func (g *game) placeMark(userID string, moveID int64, x, y int) error {
 }
 
 func (g *game) lastMoveID() int64 {
-	return (g.TurnTimestamp << 16) & int64(g.TurnNumber)
+	t := g.TurnTimestamp / 1000000000
+	return (t << 16) | int64(g.TurnNumber)
 }
 
 func (g *game) validMoves() []*MoveRange {
