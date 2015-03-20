@@ -103,7 +103,8 @@ type game struct {
 	PlayerList    []string
 	Players       map[string]Mark
 	Winner        *Winner
-	CurrentMove   int
+	TurnNumber    int
+	TurnTimestamp int64
 }
 
 func newGame(ID GameID, playerOne, playerTwo string) *game {
@@ -121,6 +122,7 @@ func newGame(ID GameID, playerOne, playerTwo string) *game {
 var (
 	ErrInvalidMove     = errors.New("invalid move")
 	ErrNotActivePlayer = errors.New("not active player")
+	ErrInvalidMoveID   = errors.New("invalid move id")
 )
 
 func (g *game) activePlayer() string {
@@ -181,17 +183,24 @@ func (g *game) winner() *Winner {
 	return g.Winner
 }
 
-func (g *game) placeMark(userID string, x, y int) error {
+func (g *game) placeMark(userID string, moveID int64, x, y int) error {
 	if g.activePlayer() != userID {
 		return ErrNotActivePlayer
+	} else if moveID != g.lastMoveID() {
+		return ErrInvalidMoveID
 	} else if !g.Grid.coordinatesValid(x, y) || !g.Grid.isEmpty(x, y) {
 		return ErrInvalidMove
 	}
 	g.Grid.set(x, y, g.Players[userID])
 	g.checkWinner(userID, x, y)
 	g.updateActivePlayer()
-	g.CurrentMove += 1
+	g.TurnNumber += 1
+	g.TurnTimestamp = time.Now().UnixNano()
 	return nil
+}
+
+func (g *game) lastMoveID() int64 {
+	return (g.TurnTimestamp << 16) & int64(g.TurnNumber)
 }
 
 func (g *game) validMoves() []*MoveRange {
@@ -306,12 +315,11 @@ func (m *GameManager) CreateGame(ctx context.Context, req *CreateRequest) (*Crea
 
 	ev := Event{
 		Type:      Event_GAME_CREATED,
-		Timestamp: timestamp(),
+		Timestamp: time.Now().UnixNano(),
 		GameId:    string(gameID),
 		UserId:    req.UserIds[0],
 		UserList:  req.UserIds,
 
-		MoveNumber: int32(game.CurrentMove),
 		NextPlayer: game.activePlayer(),
 		ValidMoves: game.validMoves(),
 	}
@@ -320,14 +328,6 @@ func (m *GameManager) CreateGame(ctx context.Context, req *CreateRequest) (*Crea
 	}
 
 	return &rep, nil
-}
-
-func timestamp() *Event_Timestamp {
-	t := time.Now()
-	return &Event_Timestamp{
-		Seconds: t.Unix(),
-		Nanos:   int32(t.Nanosecond()),
-	}
 }
 
 func (m *GameManager) PlayTurn(ctx context.Context, req *TurnRequest) (*TurnReply, error) {
@@ -343,12 +343,14 @@ func (m *GameManager) PlayTurn(ctx context.Context, req *TurnRequest) (*TurnRepl
 		return &rep, nil
 	}
 
-	err := game.placeMark(req.UserId, int(req.Move.X), int(req.Move.Y))
+	err := game.placeMark(req.UserId, req.MoveId, int(req.Move.X), int(req.Move.Y))
 	switch {
 	case err == ErrInvalidMove:
 		rep.Status = TurnReply_INVALID_MOVE
 	case err == ErrNotActivePlayer:
 		rep.Status = TurnReply_NOT_ACTIVE_PLAYER
+	case err == ErrInvalidMoveID:
+		rep.Status = TurnReply_INVALID_MOVE_ID
 	case err != nil:
 		return nil, err
 	}
@@ -359,14 +361,14 @@ func (m *GameManager) PlayTurn(ctx context.Context, req *TurnRequest) (*TurnRepl
 
 	ev := Event{
 		Type:      Event_TURN_PLAYED,
-		Timestamp: timestamp(),
+		Timestamp: time.Now().UnixNano(),
 		GameId:    string(req.GameId),
 		UserId:    req.UserId,
 		UserList:  game.PlayerList,
 
 		Move:       req.Move,
 		TurnStatus: rep.Status,
-		MoveNumber: int32(game.CurrentMove),
+		MoveId:     game.lastMoveID(),
 
 		NextPlayer: game.activePlayer(),
 	}

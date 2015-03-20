@@ -106,6 +106,7 @@ const (
 	TurnReply_INVALID_MOVE      TurnReply_ResponseStatus = 1
 	TurnReply_NOT_ACTIVE_PLAYER TurnReply_ResponseStatus = 2
 	TurnReply_FINISHED          TurnReply_ResponseStatus = 3
+	TurnReply_INVALID_MOVE_ID   TurnReply_ResponseStatus = 4
 )
 
 var TurnReply_ResponseStatus_name = map[int32]string{
@@ -113,12 +114,14 @@ var TurnReply_ResponseStatus_name = map[int32]string{
 	1: "INVALID_MOVE",
 	2: "NOT_ACTIVE_PLAYER",
 	3: "FINISHED",
+	4: "INVALID_MOVE_ID",
 }
 var TurnReply_ResponseStatus_value = map[string]int32{
 	"SUCCESS":           0,
 	"INVALID_MOVE":      1,
 	"NOT_ACTIVE_PLAYER": 2,
 	"FINISHED":          3,
+	"INVALID_MOVE_ID":   4,
 }
 
 func (x TurnReply_ResponseStatus) String() string {
@@ -165,7 +168,8 @@ func (*CreateReply) ProtoMessage()    {}
 type TurnRequest struct {
 	GameId string              `protobuf:"bytes,1,opt,name=game_id" json:"game_id,omitempty"`
 	UserId string              `protobuf:"bytes,2,opt,name=user_id" json:"user_id,omitempty"`
-	Move   *TurnRequest_Square `protobuf:"bytes,3,opt,name=move" json:"move,omitempty"`
+	MoveId int64               `protobuf:"varint,3,opt,name=move_id" json:"move_id,omitempty"`
+	Move   *TurnRequest_Square `protobuf:"bytes,4,opt,name=move" json:"move,omitempty"`
 }
 
 func (m *TurnRequest) Reset()         { *m = TurnRequest{} }
@@ -243,14 +247,14 @@ func (*MoveRange) ProtoMessage()    {}
 
 type Event struct {
 	Type       Event_Type               `protobuf:"varint,1,opt,name=type,enum=tictactoe.Event_Type" json:"type,omitempty"`
-	Timestamp  *Event_Timestamp         `protobuf:"bytes,2,opt,name=timestamp" json:"timestamp,omitempty"`
+	Timestamp  int64                    `protobuf:"varint,2,opt,name=timestamp" json:"timestamp,omitempty"`
 	GameId     string                   `protobuf:"bytes,3,opt,name=game_id" json:"game_id,omitempty"`
 	UserId     string                   `protobuf:"bytes,4,opt,name=user_id" json:"user_id,omitempty"`
 	UserList   []string                 `protobuf:"bytes,5,rep,name=user_list" json:"user_list,omitempty"`
 	Move       *TurnRequest_Square      `protobuf:"bytes,6,opt,name=move" json:"move,omitempty"`
 	TurnStatus TurnReply_ResponseStatus `protobuf:"varint,7,opt,name=turn_status,enum=tictactoe.TurnReply_ResponseStatus" json:"turn_status,omitempty"`
 	Winner     *Winner                  `protobuf:"bytes,8,opt,name=winner" json:"winner,omitempty"`
-	MoveNumber int32                    `protobuf:"varint,9,opt,name=move_number" json:"move_number,omitempty"`
+	MoveId     int64                    `protobuf:"varint,9,opt,name=move_id" json:"move_id,omitempty"`
 	NextPlayer string                   `protobuf:"bytes,10,opt,name=next_player" json:"next_player,omitempty"`
 	ValidMoves []*MoveRange             `protobuf:"bytes,11,rep,name=valid_moves" json:"valid_moves,omitempty"`
 }
@@ -258,13 +262,6 @@ type Event struct {
 func (m *Event) Reset()         { *m = Event{} }
 func (m *Event) String() string { return proto.CompactTextString(m) }
 func (*Event) ProtoMessage()    {}
-
-func (m *Event) GetTimestamp() *Event_Timestamp {
-	if m != nil {
-		return m.Timestamp
-	}
-	return nil
-}
 
 func (m *Event) GetMove() *TurnRequest_Square {
 	if m != nil {
@@ -286,15 +283,6 @@ func (m *Event) GetValidMoves() []*MoveRange {
 	}
 	return nil
 }
-
-type Event_Timestamp struct {
-	Seconds int64 `protobuf:"varint,1,opt,name=seconds" json:"seconds,omitempty"`
-	Nanos   int32 `protobuf:"varint,2,opt,name=nanos" json:"nanos,omitempty"`
-}
-
-func (m *Event_Timestamp) Reset()         { *m = Event_Timestamp{} }
-func (m *Event_Timestamp) String() string { return proto.CompactTextString(m) }
-func (*Event_Timestamp) ProtoMessage()    {}
 
 func init() {
 	proto.RegisterEnum("tictactoe.Mark", Mark_name, Mark_value)
