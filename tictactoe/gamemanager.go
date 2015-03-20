@@ -88,7 +88,7 @@ func (m *GameManager) PlayTurn(ctx context.Context, req *TurnRequest) (*TurnRepl
 
 	game := m.activeGames[GameID(req.GameId)]
 	if game.isFinished() {
-		rep.Winner = game.winner()
+		rep.Status = TurnReply_FINISHED
 		return &rep, nil
 	}
 
@@ -104,10 +104,6 @@ func (m *GameManager) PlayTurn(ctx context.Context, req *TurnRequest) (*TurnRepl
 		return nil, err
 	}
 
-	if game.isFinished() {
-		rep.Winner = game.winner()
-	}
-
 	ev := Event{
 		Type:      Event_TURN_PLAYED,
 		Timestamp: time.Now().UnixNano(),
@@ -121,8 +117,9 @@ func (m *GameManager) PlayTurn(ctx context.Context, req *TurnRequest) (*TurnRepl
 
 		NextPlayer: game.activePlayer(),
 	}
-	if rep.Winner != nil {
-		ev.Winner = rep.Winner
+	if game.isFinished() {
+		rep.Status = TurnReply_FINISHED
+		ev.Winner = game.winner()
 	} else {
 		ev.ValidMoves = game.validMoves()
 	}

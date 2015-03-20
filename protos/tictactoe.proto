@@ -82,7 +82,6 @@ message TurnReply {
   }
 
   ResponseStatus status = 1;
-  optional Winner winner = 2;
 }
 
 message MoveRange {

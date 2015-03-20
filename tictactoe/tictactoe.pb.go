@@ -220,19 +220,11 @@ func (*Winner_Location) ProtoMessage()    {}
 
 type TurnReply struct {
 	Status TurnReply_ResponseStatus `protobuf:"varint,1,opt,name=status,enum=tictactoe.TurnReply_ResponseStatus" json:"status,omitempty"`
-	Winner *Winner                  `protobuf:"bytes,2,opt,name=winner" json:"winner,omitempty"`
 }
 
 func (m *TurnReply) Reset()         { *m = TurnReply{} }
 func (m *TurnReply) String() string { return proto.CompactTextString(m) }
 func (*TurnReply) ProtoMessage()    {}
-
-func (m *TurnReply) GetWinner() *Winner {
-	if m != nil {
-		return m.Winner
-	}
-	return nil
-}
 
 type MoveRange struct {
 	FromX int32 `protobuf:"varint,1,opt,name=from_x" json:"from_x,omitempty"`
