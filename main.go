@@ -36,7 +36,9 @@ func main() {
 		glog.Fatalf("failed to listen: %v", err)
 	}
 
-	producer, err := sarama.NewSyncProducer([]string{"localhost:9092"}, nil)
+	cfg := sarama.NewConfig()
+	cfg.ClientID = "service-tictactoe-game"
+	producer, err := sarama.NewSyncProducer([]string{"localhost:9092"}, cfg)
 	if err != nil {
 		glog.Fatalf("Unable to connect to kafka: %s", err)
 	}
