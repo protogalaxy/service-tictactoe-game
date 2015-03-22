@@ -91,10 +91,8 @@ func (m *GameManager) PlayTurn(ctx context.Context, req *TurnRequest) (*TurnRepl
 	defer m.lock.Unlock()
 
 	game := m.activeGames[GameID(req.GameId)]
-	if game.isFinished() {
-		rep.Status = TurnReply_FINISHED
-		return &rep, nil
-	}
+
+	alreadyFinsihed := game.isFinished()
 
 	err := game.placeMark(req.UserId, req.MoveId, int(req.Move.X), int(req.Move.Y))
 	switch {
@@ -123,11 +121,15 @@ func (m *GameManager) PlayTurn(ctx context.Context, req *TurnRequest) (*TurnRepl
 
 		NextPlayer: game.activePlayer(),
 	}
+	if !alreadyFinsihed {
+		if game.isFinished() {
+			rep.Status = TurnReply_FINISHED
+		} else {
+			ev.ValidMoves = game.validMoves()
+		}
+	}
 	if game.isFinished() {
-		rep.Status = TurnReply_FINISHED
 		ev.Winner = game.winner()
-	} else {
-		ev.ValidMoves = game.validMoves()
 	}
 	if err := sendMessage(m.stream, streamTopic, ev.GameId, &ev); err != nil {
 		return nil, err

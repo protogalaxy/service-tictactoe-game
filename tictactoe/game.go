@@ -110,7 +110,9 @@ func (g *game) winner() *Winner {
 }
 
 func (g *game) placeMark(userID string, moveID int64, x, y int) error {
-	if g.activePlayer() != userID {
+	if g.isFinished() {
+		return ErrInvalidMove
+	} else if g.activePlayer() != userID {
 		return ErrNotActivePlayer
 	} else if moveID != g.lastMoveID() {
 		return ErrInvalidMoveID
