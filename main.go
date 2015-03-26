@@ -17,8 +17,11 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"math/rand"
 	"net"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/protogalaxy/service-tictactoe-game/Godeps/_workspace/src/github.com/Shopify/sarama"
@@ -27,18 +30,29 @@ import (
 	"github.com/protogalaxy/service-tictactoe-game/tictactoe"
 )
 
+var port = flag.Int("port", 9090, "port to listen on")
+
+func ParseLinkEnv(name string) string {
+	v := os.Getenv(name + "_PORT")
+	if v == "" {
+		glog.Fatalf("Missing environment variable %s_PORT", name)
+	}
+	connStr := strings.Split(v, "//")[1]
+	return connStr
+}
+
 func main() {
 	flag.Parse()
 	rand.Seed(time.Now().UnixNano())
 
-	socket, err := net.Listen("tcp", ":9090")
+	socket, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
 	if err != nil {
 		glog.Fatalf("failed to listen: %v", err)
 	}
 
 	cfg := sarama.NewConfig()
 	cfg.ClientID = "service-tictactoe-game"
-	producer, err := sarama.NewSyncProducer([]string{"localhost:9092"}, cfg)
+	producer, err := sarama.NewSyncProducer([]string{ParseLinkEnv("KAFKA")}, cfg)
 	if err != nil {
 		glog.Fatalf("Unable to connect to kafka: %s", err)
 	}
